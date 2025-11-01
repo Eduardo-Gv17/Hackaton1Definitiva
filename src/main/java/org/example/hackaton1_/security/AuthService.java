@@ -21,7 +21,16 @@ public class AuthService {
 
     public AuthResponse register(String username, String email, String password, Role role, String branch) {
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("El email ya está registrado.");
+            throw new RuntimeException("El email ya está registrado."); // Usar 409 Conflict
+        }
+
+        // Validación de Branch: Obligatorio para BRANCH, no permitido para CENTRAL.
+        if (role == Role.BRANCH && (branch == null || branch.isBlank())) {
+            throw new RuntimeException("El campo 'branch' es obligatorio para usuarios BRANCH."); // Usar 400 Bad Request
+        }
+        if (role == Role.CENTRAL && branch != null && !branch.isBlank()) {
+            // Opcional: Ignorar o lanzar error si intenta setear branch a CENTRAL
+            branch = null;
         }
 
         User user = new User();
