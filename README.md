@@ -86,18 +86,63 @@ El procesamiento de resúmenes de ventas es una tarea pesada que no debe bloquea
 
 ## 5. 🪄 (Reto Extra) Documentación Endpoint Premium
 
+
 Se implementó exitosamente el Reto Extra.
 
+Antes de usar el endpoint premium, se debe obtener un token JWT registrando un usuario con su rol.
+
 | Método | Endpoint | Descripción | Roles Permitidos |
-|--------|----------|-------------|-----------------|
+|--------|-----------|--------------|------------------|
+| POST | `/auth/register` | Crea un nuevo usuario con su rol. | CENTRAL |
+
+
+**Ejemplo (`/auth/register`):**
+
+```json
+{
+  "username": "prueba245",
+  "email": "prueba245@gmail.com",
+  "password": "12345678",
+  "role": "CENTRAL"
+}
+
+```
+
+
+**Respuesta (201 Created):**
+
+```json
+
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "role": "CENTRAL"
+}
+```
+
+Ese token se usa luego en los headers de /sales/summary/weekly/premium:
+
+Authorization: Bearer "eyJhbGciOiJIUzI1NiJ9..."
+
+
+| Método | Endpoint | Descripción | Roles Permitidos |
+|--------|-----------|--------------|------------------|
 | POST | `/sales/summary/weekly/premium` | Solicita un reporte asíncrono con email en formato HTML, gráficos embebidos (vía QuickChart.io) y un PDF adjunto. | CENTRAL, BRANCH |
 
+**Ejemplo (`/sales/summary/weekly/premium`):**
+
+
+**Headers:**
+
+Content-Type: application/json  
+Authorization: Bearer "eyJhbGciOiJIUzI1NiJ9..."
+
 **Request Body (Ejemplo):**
+
 ```json
 {
   "from": "2025-09-01",
   "to": "2025-09-07",
-  "branch": "Miraflores", 
+  "branch": "Miraflores",
   "emailTo": "gerente@oreo.com",
   "format": "PREMIUM",
   "includeCharts": true,
@@ -105,16 +150,28 @@ Se implementó exitosamente el Reto Extra.
 }
 ```
 
-***Response Body (202 Accepted):**
-```json
+**Response Body (202 Accepted):**
 
+
+```json
 {
-  "requestId": "req_premium_abcdef12",
-  "status": "PROCESSING",
-  "message": "Su reporte premium está siendo generado.",
   "estimatedTime": "60-90 segundos",
-  "features": ["HTML_FORMAT", "CHARTS", "PDF_ATTACHMENT"],
-  "requestedAt": "2025-11-01T19:30:00Z"
+  "requestedAt": "2025-11-03T21:14:39.7881124",
+  "features": [
+    "HTML_FORMAT",
+    "CHARTS",
+    "PDF_ATTACHMENT"
+  ],
+  "message": "Su reporte premium está siendo generado.",
+  "status": "PROCESSING",
+  "requestId": "req_premium_a01656bd"
 }
 ```
+
+
+
+
+
+
+
 
