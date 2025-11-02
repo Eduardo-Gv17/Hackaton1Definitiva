@@ -1,13 +1,21 @@
 package org.example.hackaton1_.controller;
 
+import jakarta.validation.Valid;
 import org.example.hackaton1_.dto.SaleRequest;
+import org.example.hackaton1_.dto.SalesSummaryRequest;
 import org.example.hackaton1_.event.ReportRequestedEvent;
+import org.example.hackaton1_.exception.BadRequestException;
+import org.example.hackaton1_.exception.ForbiddenException;
+import org.example.hackaton1_.model.Role;
 import org.example.hackaton1_.model.Sale;
+import org.example.hackaton1_.model.User;
+import org.example.hackaton1_.security.SecurityUtils;
 import org.example.hackaton1_.service.SalesService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -18,6 +26,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/sales")
+@Validated
 public class SalesController {
 
     private final SalesService salesService;
@@ -30,7 +39,7 @@ public class SalesController {
 
 
     @PostMapping
-    public ResponseEntity<Sale> createSale(@RequestBody SaleRequest request) {
+    public ResponseEntity<Sale> createSale(@Valid @RequestBody SaleRequest request) { // Añadir @Valid
         Sale created = salesService.createSale(request);
         return ResponseEntity.status(201).body(created);
     }
@@ -42,13 +51,12 @@ public class SalesController {
             @RequestParam(required = false) String to,
             @RequestParam(required = false) String branch) {
 
-        // El SalesService debe manejar la lógica de filtrado por usuario/rol
         List<Sale> sales = salesService.getFilteredSales(from, to, branch);
         return ResponseEntity.ok(sales);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Sale> updateSale(@PathVariable String id, @RequestBody SaleRequest request) {
+    public ResponseEntity<Sale> updateSale(@PathVariable String id, @Valid @RequestBody SaleRequest request) { // Añadir @Valid
         Sale updated = salesService.updateSale(id, request);
         return ResponseEntity.ok(updated);
     }
@@ -68,15 +76,20 @@ public class SalesController {
     }
 
     @PostMapping("/summary/weekly")
-    public ResponseEntity<Map<String, Object>> requestWeeklySummary(@RequestBody SalesSummaryRequest req) {
+    public ResponseEntity<Map<String, Object>> requestWeeklySummary(@RequestBody SalesSummaryRequest req) { // @Valid si añades validaciones
         User currentUser = SecurityUtils.getCurrentUser();
 
-        // 1. Validaciones y Fechas por defecto
+        // 1. Validaciones
         if (req.getEmailTo() == null || req.getEmailTo().isBlank()) {
-            throw new RuntimeException("El campo emailTo es obligatorio."); // 400
+            throw new BadRequestException("El campo emailTo es obligatorio."); // 400
         }
-        if (currentUser.getRole() == Role.BRANCH && !currentUser.getBranch().equals(req.getBranch())) {
-            throw new RuntimeException("No puede generar resúmenes de otra sucursal."); // 403
+
+        // Asignar sucursal si es BRANCH
+        if (currentUser.getRole() == Role.BRANCH) {
+            if (req.getBranch() != null && !req.getBranch().equals(currentUser.getBranch())) {
+                throw new ForbiddenException("No puede generar resúmenes de otra sucursal."); // 403
+            }
+            req.setBranch(currentUser.getBranch()); // Forzar la sucursal del usuario
         }
 
         if (req.getFrom() == null || req.getTo() == null) {
@@ -84,12 +97,12 @@ public class SalesController {
             req.setFrom(req.getTo().minusDays(7)); // Última semana
         }
 
-        // 2. Publicar evento (dispara el procesamiento asíncrono)
+        // 2. Publicar evento
         eventPublisher.publishEvent(new ReportRequestedEvent(req));
 
         // 3. Respuesta 202 Accepted
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of(
-                "requestId", "req_" + UUID.randomUUID(),
+                "requestId", "req_" + UUID.randomUUID().toString().substring(0, 8),
                 "status", "PROCESSING",
                 "message", "Su solicitud de reporte está siendo procesada. Recibirá el resumen en " + req.getEmailTo() + " en unos momentos.",
                 "estimatedTime", "30-60 segundos",

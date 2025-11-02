@@ -1,6 +1,8 @@
 package org.example.hackaton1_.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,7 +11,8 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
-
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -18,14 +21,21 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @Column(unique = true, nullable = false)
     private String username;
+
+    @Column(unique = true, nullable = false)
     private String email;
+
+    @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role;
 
     private String branch;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Override
@@ -33,7 +43,6 @@ public class User implements UserDetails {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
-    // Retorna 'true' para todas las cuentas por defecto
     @Override
     public boolean isAccountNonExpired() { return true; }
     @Override
@@ -43,16 +52,5 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 
-    public String getId() { return id; }
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-    public String getBranch() { return branch; }
-    public void setBranch(String branch) { this.branch = branch; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+
 }
