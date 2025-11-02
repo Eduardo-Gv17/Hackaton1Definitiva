@@ -8,12 +8,12 @@ Este proyecto es la implementación de un backend para la Hackathon #1, diseñad
 
 * **Nombre Completo:** `Eduardo Salvador Guevara Vargas`
     * **Código UTEC:** `202410096`
-* **Nombre Completo:** `(Nombre Apellido)`
-    * **Código UTEC:** `(Código)`
-* **Nombre Completo:** `(Nombre Apellido)`
-    * **Código UTEC:** `(Código)`
-* **Nombre Completo:** `(Nombre Apellido)`
-    * **Código UTEC:** `(Código)`
+* **Nombre Completo:** `Itzel Yadira Arellys Luciani Dávila`
+    * **Código UTEC:** `202310653`
+* **Nombre Completo:** `Miguel Adrian Espinoza Arnero`
+    * **Código UTEC:** `202320031`
+* **Nombre Completo:** `Zahir Jamil Turco Salas`
+    * **Código UTEC:** `202410292`
 
 
 ---
