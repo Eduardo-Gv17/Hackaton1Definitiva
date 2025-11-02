@@ -17,6 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.example.hackaton1_.dto.PremiumSalesSummaryRequest;
+import org.example.hackaton1_.event.PremiumReportRequestedEvent;
+import java.util.ArrayList;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -106,6 +109,50 @@ public class SalesController {
                 "status", "PROCESSING",
                 "message", "Su solicitud de reporte está siendo procesada. Recibirá el resumen en " + req.getEmailTo() + " en unos momentos.",
                 "estimatedTime", "30-60 segundos",
+                "requestedAt", LocalDateTime.now()
+        ));
+    }
+
+    @PostMapping("/summary/weekly/premium")
+    public ResponseEntity<Map<String, Object>> requestPremiumSummary(@Valid @RequestBody PremiumSalesSummaryRequest req) {
+        User currentUser = SecurityUtils.getCurrentUser();
+
+        // 1. Validaciones
+        if (req.getEmailTo() == null || req.getEmailTo().isBlank()) {
+            throw new BadRequestException("El campo emailTo es obligatorio."); // 400
+        }
+        if (req.getFormat() == null || !req.getFormat().equalsIgnoreCase("PREMIUM")) {
+            throw new BadRequestException("El formato debe ser 'PREMIUM'.");
+        }
+
+        // Asignar sucursal si es BRANCH
+        if (currentUser.getRole() == Role.BRANCH) {
+            if (req.getBranch() != null && !req.getBranch().equals(currentUser.getBranch())) {
+                throw new ForbiddenException("No puede generar resúmenes de otra sucursal."); // 403
+            }
+            req.setBranch(currentUser.getBranch()); // Forzar la sucursal del usuario
+        }
+
+        if (req.getFrom() == null || req.getTo() == null) {
+            req.setTo(LocalDate.now());
+            req.setFrom(req.getTo().minusDays(7)); // Última semana
+        }
+
+        // 2. Publicar evento PREMIUM
+        eventPublisher.publishEvent(new PremiumReportRequestedEvent(req));
+
+        // 3. Respuesta 202 Accepted (como pide el README)
+        List<String> features = new ArrayList<>();
+        features.add("HTML_FORMAT");
+        if (req.isIncludeCharts()) features.add("CHARTS");
+        if (req.isAttachPdf()) features.add("PDF_ATTACHMENT");
+
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(Map.of(
+                "requestId", "req_premium_" + UUID.randomUUID().toString().substring(0, 8),
+                "status", "PROCESSING",
+                "message", "Su reporte premium está siendo generado.",
+                "estimatedTime", "60-90 segundos",
+                "features", features,
                 "requestedAt", LocalDateTime.now()
         ));
     }

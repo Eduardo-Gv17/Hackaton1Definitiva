@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Reporte Semanal Oreo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #000000; color: white; padding: 20px; text-align: center; }
+        .header h1 { margin: 0; }
+        .content { padding: 20px; border: 1px solid #ddd; }
+        .metric-box { display: inline-block; padding: 15px; margin: 10px; background: #f4f4f4; border-radius: 8px; }
+        .metric-box h3 { margin: 0 0 5px 0; }
+        .metric-box p { margin: 0; font-size: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🍪 Reporte Semanal Oreo</h1>
+</div>
+<div class="content">
+    <p>Hola, aquí tienes el resumen de la semana:</p>
+
+    <h3>Resumen del Analista IA:</h3>
+    <p th:text="${aiSummary}">Aquí va el resumen generado por la IA...</p>
+    <hr/>
+
+    <div class="metric-box">
+        <h3>Unidades Totales</h3>
+        <p th:text="${summary.totalUnits}"></p>
+    </div>
+    <div class="metric-box">
+        <h3>Ingresos Totales</h3>
+        <p th:text="'S/ ' + ${#numbers.formatDecimal(summary.totalRevenue, 1, 'COMMA', 2, 'POINT')}"></p>
+    </div>
+    <div class="metric-box">
+        <h3>SKU Top</h3>
+        <p th:text="${summary.topSku}"></p>
+    </div>
+
+    <div th:if="${chartUrl}" style="margin-top: 20px; text-align: center;">
+        <h3>Gráfico de Ventas</h3>
+        <img th:src="${chartUrl}" alt="Gráfico de Ventas" />
+    </div>
+</div>
+</body>
+</html>
