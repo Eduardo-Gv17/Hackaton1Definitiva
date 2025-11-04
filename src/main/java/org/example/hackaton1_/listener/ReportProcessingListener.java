@@ -9,7 +9,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-
 @Component
 public class ReportProcessingListener {
 
@@ -30,19 +29,42 @@ public class ReportProcessingListener {
     public void handleReportRequest(ReportRequestedEvent event) {
         SalesSummaryRequest req = event.getRequest();
 
-        // 1. Cálculo de agregados
-        var summary = aggregationService.calculateSummary(req.getFrom(), req.getTo(), req.getBranch());
+        try {
+            System.out.println("Solicitud de reporte recibida. Preparando envío de Gmail...");
 
-        // 2. Generación de resumen con LLM
-        String aiSummary = githubClient.generateSummary(summary);
+            // 1. Calcular datos agregados
+            var summary = aggregationService.calculateSummary(req.getFrom(), req.getTo(), req.getBranch());
+            System.out.println("Datos agregados generados correctamente.");
 
-        // 3. Formato del Asunto
-        String subject = String.format("Reporte Semanal Oreo - %s a %s",
-                req.getFrom().toString(), req.getTo().toString());
+            // 2. Generar resumen con IA (si falla, continuar igual)
+            String aiSummary;
+            try {
+                aiSummary = githubClient.generateSummary(summary);
+                System.out.println("Resumen IA generado correctamente.");
+            } catch (Exception e) {
+                aiSummary = "No se pudo generar resumen automático. Se envían solo los datos agregados.";
+                System.err.println("Error en generación de resumen IA: " + e.getMessage());
+            }
 
-        // 4. Envío de Email
-        emailService.sendEmail(req.getEmailTo(),
-                subject,
-                aiSummary + "\n\nDatos Agregados:\n" + summary); // Incluye los agregados en el cuerpo
+            // 3. Crear asunto y cuerpo del correo
+            String subject = String.format("Reporte Semanal Oreo - %s a %s",
+                    req.getFrom().toString(), req.getTo().toString());
+
+            String body = "Hola,\n\n"
+                    + "Tu reporte semanal está listo.\n\n"
+                    + aiSummary + "\n\n"
+                    + "Datos agregados:\n" + summary + "\n\n"
+                    + "Atentamente,\n"
+                    + "Equipo Oreo Insight Factory";
+
+            // 4. Enviar correo garantizado
+            emailService.sendEmail(req.getEmailTo(), subject, body);
+
+            System.out.println("Correo enviado correctamente. Flujo completado.");
+
+        } catch (Exception e) {
+            System.err.println("Error general en flujo de envío Gmail: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
